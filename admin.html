@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infomedia Portal - Desktop Admin Control Center</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --navy: #0f172a;
+      --border: #cbd5e1;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --fb-blue: #1877f2;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--navy); padding: 24px; display: flex; justify-content: center; min-height: 100vh; align-items: center; }
+
+    .login-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.9); display: flex; align-items: center; justify-content: center; z-index: 200; }
+    .login-card { background: #fff; padding: 30px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .login-card h2 { color: var(--navy); margin-bottom: 20px; font-size: 20px; text-align: center; }
+    .login-group { margin-bottom: 16px; }
+    .login-group label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 6px; color: #64748b; text-transform: uppercase; }
+    .login-group input { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; }
+    .btn-login { width: 100%; background: var(--primary); color: #fff; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+
+    .admin-container { width: 100%; max-width: 1200px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow: hidden; }
+    
+    .admin-header { background: var(--navy); color: #fff; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .admin-header h1 { font-size: 20px; font-weight: 800; }
+    .admin-header span { font-size: 13px; color: #94a3b8; }
+
+    .admin-body { padding: 24px; }
+    
+    .config-card { background: #f8fafc; border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+    .config-group { flex: 1; min-width: 220px; }
+    label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: #475569; text-transform: uppercase; }
+    input[type="text"] { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+
+    h3 { font-size: 16px; margin-bottom: 14px; color: var(--navy); display: flex; justify-content: space-between; align-items: center; }
+    .queue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    
+    .review-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+    .review-img-wrap { width: 100%; height: 200px; background: #000; position: relative; }
+    .review-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .tag-pill { position: absolute; top: 10px; left: 10px; background: rgba(15,23,42,0.8); color: #fff; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 4px; }
+    .tag-pill.potw { background: #8b5cf6; }
+
+    .review-info { padding: 14px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+    .review-caption { font-size: 13.5px; font-weight: 600; margin-bottom: 6px; color: var(--navy); }
+    .review-meta { font-size: 11.5px; color: #64748b; margin-bottom: 12px; }
+
+    .action-row { display: flex; gap: 8px; }
+    .btn-ok { flex: 1; background: var(--success); color: #fff; border: none; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .btn-no { flex: 1; background: var(--danger); color: #fff; border: none; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+    .empty-state { text-align: center; padding: 40px; color: #64748b; grid-column: 1 / -1; font-size: 14px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ADMIN LOGIN GATE -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-card">
+      <h2>🔐 Admin Portal Login</h2>
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="login-group">
+          <label>Username</label>
+          <input type="text" id="adminUser" required />
+        </div>
+        <div class="login-group">
+          <label>Password</label>
+          <input type="password" id="adminPass" required />
+        </div>
+        <button type="submit" class="btn-login">Login to Control Center</button>
+        <div id="loginError" style="color:var(--danger); font-size:12px; text-align:center; margin-top:10px; font-weight:600;"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-container hidden" id="adminDashboard">
+    <div class="admin-header">
+      <h1>🛡️ Infomedia Desktop Admin Portal</h1>
+      <span id="adminSessionInfo">Logged in</span>
+    </div>
+
+    <div class="admin-body">
+      <div class="config-card">
+        <div class="config-group">
+          <label>Public Student Portal Link</label>
+          <input type="text" id="portalLink" readonly style="background:#e2e8f0; color:#334155; cursor:pointer;" onclick="this.select(); document.execCommand('copy'); alert('Copied student portal link!');" />
+        </div>
+        <div>
+          <button onclick="openApprovedFolder()" style="padding: 10px 16px; background: var(--fb-blue); color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 8px;">📁 Open Approved Folder (FB)</button>
+          <button onclick="loadPendingQueue()" style="padding: 10px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <h3><span>Pending Submissions (Evaluation Queue)</span></h3>
+      <div id="queueGrid" class="queue-grid">
+        <div class="empty-state">Fetching pending student submissions...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhtlzVkpgssG0lMrZY0VD_u85Czif_aaRjUXZSvcorfWw0hJNBqdnyzTWggC6MuajR/exec";
+    let loggedInAdminName = "";
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const user = document.getElementById('adminUser').value;
+      const pass = document.getElementById('adminPass').value;
+      const errDiv = document.getElementById('loginError');
+
+      errDiv.innerText = "Verifying credentials...";
+
+      fetch(`${APPS_SCRIPT_URL}?action=login&user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) {
+            loggedInAdminName = res.fullName;
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            document.getElementById('adminSessionInfo').innerText = `Logged in as: ${res.fullName}`;
+            document.getElementById('portalLink').value = window.location.href.replace('admin.html', 'index.html');
+            loadPendingQueue();
+          } else {
+            errDiv.innerText = res.error;
+          }
+        })
+        .catch(() => { errDiv.innerText = "Connection error during login."; });
+    }
+
+    function loadPendingQueue() {
+      const grid = document.getElementById('queueGrid');
+      grid.innerHTML = '<div class="empty-state">Loading pending submissions...</div>';
+
+      fetch(`${APPS_SCRIPT_URL}?action=getPending`)
+        .then(res => res.json())
+        .then(photos => {
+          if (photos.length === 0) {
+            grid.innerHTML = '<div class="empty-state">✅ All caught up! No pending submissions in staging.</div>';
+            return;
+          }
+
+          grid.innerHTML = photos.map(p => {
+            const isPotw = p.submissionType === 'PHOTO_OF_THE_WEEK';
+            return `
+              <div class="review-card" id="card-${p.id}">
+                <div class="review-img-wrap">
+                  <img src="${p.url}" alt="Submission" loading="lazy" />
+                  <span class="tag-pill ${isPotw ? 'potw' : ''}">${isPotw ? '🏆 Photo of the Week' : '⚡ Live Event POV'}</span>
+                </div>
+                <div class="review-info">
+                  <div>
+                    <div class="review-caption">${escapeHtml(p.caption || 'No caption')}</div>
+                    <div class="review-meta">
+                      👤 <strong>${escapeHtml(p.sender)}</strong><br>
+                      🏷️ ${escapeHtml(p.eventName)}<br>
+                      ⏱️ ${new Date(p.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </div>
+                  </div>
+                  <div class="action-row">
+                    <button class="btn-ok" onclick="processReview('${p.id}', 'APPROVE')">✔ OK</button>
+                    <button class="btn-no" onclick="processReview('${p.id}', 'REJECT')">✖ Not OK</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        })
+        .catch(() => { grid.innerHTML = '<div class="empty-state" style="color:var(--danger);">Failed to fetch pending queue.</div>'; });
+    }
+
+    function processReview(subId, decision) {
+      const card = document.getElementById(`card-${subId}`);
+      if (card) {
+        card.style.opacity = "0.5";
+        card.querySelectorAll('button').forEach(b => b.disabled = true);
+      }
+
+      fetch(`${APPS_SCRIPT_URL}?action=evaluate&id=${subId}&decision=${decision}&admin=${encodeURIComponent(loggedInAdminName)}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) {
+            card.remove();
+            loadPendingQueue();
+          } else {
+            alert("Error: " + res.error);
+            if (card) {
+              card.style.opacity = "1";
+              card.querySelectorAll('button').forEach(b => b.disabled = false);
+            }
+          }
+        });
+    }
+
+    function openApprovedFolder() {
+      fetch(`${APPS_SCRIPT_URL}?action=getFolder`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success && res.url) window.open(res.url, '_blank');
+          else alert("Could not retrieve folder URL: " + res.error);
+        });
+    }
+
+    function escapeHtml(text) {
+      return text ? text.replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">") : "";
+    }
+  </script>
+</body>
+</html>

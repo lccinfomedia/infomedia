@@ -39,6 +39,10 @@
     label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: #475569; text-transform: uppercase; }
     input[type="text"] { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
 
+    .toggle-btn { padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; border: none; }
+    .toggle-btn.open { background: var(--success); color: white; }
+    .toggle-btn.closed { background: var(--danger); color: white; }
+
     h3 { font-size: 16px; margin-bottom: 14px; color: var(--navy); display: flex; justify-content: space-between; align-items: center; }
     .queue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
     
@@ -89,14 +93,32 @@
     </div>
 
     <div class="admin-body">
+      <!-- CONFIG CONTROLS -->
       <div class="config-card">
         <div class="config-group">
           <label>Public Student Portal Link</label>
           <input type="text" id="portalLink" readonly style="background:#e2e8f0; color:#334155; cursor:pointer;" onclick="this.select(); document.execCommand('copy'); alert('Copied student portal link!');" />
         </div>
+        <div class="config-group">
+          <label>Active Transparent Frame URL (PNG)</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="frameUrlInput" placeholder="Paste direct image link..." />
+            <button onclick="saveFrameUrl()" style="padding: 10px 14px; background: var(--primary); color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;">Set</button>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-end;">
+          <div>
+            <label>Live POV Status</label>
+            <button id="povToggleBtn" class="toggle-btn open" onclick="toggleSystemStatus('POV_STATUS')">OPEN</button>
+          </div>
+          <div>
+            <label>POTW Status</label>
+            <button id="potwToggleBtn" class="toggle-btn open" onclick="toggleSystemStatus('POTW_STATUS')">OPEN</button>
+          </div>
+        </div>
         <div>
           <button onclick="openApprovedFolder()" style="padding: 10px 16px; background: var(--fb-blue); color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 8px;">📁 Open Approved Folder (FB)</button>
-          <button onclick="loadPendingQueue()" style="padding: 10px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">🔄 Refresh</button>
+          <button onclick="loadDashboardData()" style="padding: 10px 16px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">🔄 Refresh</button>
         </div>
       </div>
 
@@ -110,6 +132,7 @@
   <script>
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhtlzVkpgssG0lMrZY0VD_u85Czif_aaRjUXZSvcorfWw0hJNBqdnyzTWggC6MuajR/exec";
     let loggedInAdminName = "";
+    let systemSettings = {};
 
     function handleAdminLogin(e) {
       e.preventDefault();
@@ -128,12 +151,57 @@
             document.getElementById('adminDashboard').classList.remove('hidden');
             document.getElementById('adminSessionInfo').innerText = `Logged in as: ${res.fullName}`;
             document.getElementById('portalLink').value = window.location.href.replace('admin.html', 'index.html');
-            loadPendingQueue();
+            loadDashboardData();
           } else {
             errDiv.innerText = res.error;
           }
         })
         .catch(() => { errDiv.innerText = "Connection error during login."; });
+    }
+
+    function loadDashboardData() {
+      loadSettings();
+      loadPendingQueue();
+    }
+
+    function loadSettings() {
+      fetch(`${APPS_SCRIPT_URL}?action=getSettings`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success && res.settings) {
+            systemSettings = res.settings;
+            document.getElementById('frameUrlInput').value = systemSettings.ACTIVE_FRAME_URL || "";
+            
+            const povBtn = document.getElementById('povToggleBtn');
+            povBtn.innerText = systemSettings.POV_STATUS;
+            povBtn.className = `toggle-btn ${systemSettings.POV_STATUS === 'OPEN' ? 'open' : 'closed'}`;
+
+            const potwBtn = document.getElementById('potwToggleBtn');
+            potwBtn.innerText = systemSettings.POTW_STATUS;
+            potwBtn.className = `toggle-btn ${systemSettings.POTW_STATUS === 'OPEN' ? 'open' : 'closed'}`;
+          }
+        });
+    }
+
+    function saveFrameUrl() {
+      const url = document.getElementById('frameUrlInput').value.trim();
+      fetch(`${APPS_SCRIPT_URL}?action=updateSettings&key=ACTIVE_FRAME_URL&value=${encodeURIComponent(url)}&admin=${encodeURIComponent(loggedInAdminName)}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) alert("Transparent event frame successfully updated!");
+          else alert("Failed to update frame.");
+        });
+    }
+
+    function toggleSystemStatus(key) {
+      const currentVal = systemSettings[key] || "OPEN";
+      const newVal = currentVal === "OPEN" ? "CLOSED" : "OPEN";
+      
+      fetch(`${APPS_SCRIPT_URL}?action=updateSettings&key=${key}&value=${newVal}&admin=${encodeURIComponent(loggedInAdminName)}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) loadSettings();
+        });
     }
 
     function loadPendingQueue() {

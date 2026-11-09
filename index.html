@@ -25,9 +25,10 @@
     .header p { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
     
     .mode-tabs { display: flex; background: #0f172a; padding: 6px; gap: 6px; border-bottom: 1px solid var(--border); }
-    .mode-btn { flex: 1; padding: 10px 8px; border: none; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 11.5px; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em; }
+    .mode-btn { flex: 1; padding: 10px 8px; border: none; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 11.5px; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; gap: 4px; }
     .mode-btn.active.pov { background: var(--primary); color: #fff; }
     .mode-btn.active.potw { background: var(--potw-accent); color: #fff; }
+    .mode-btn.hidden-tab { display: none !important; }
 
     .body { padding: 20px; flex: 1; overflow-y: auto; }
     .form-group { margin-bottom: 16px; }
@@ -35,17 +36,19 @@
     input[type="text"], textarea { width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid var(--border); border-radius: 8px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s; }
     input[type="text"]:focus, textarea:focus { border-color: var(--primary); }
     
-    /* Impeccable End-to-End Immersive Viewfinder */
-    .viewfinder { position: relative; width: 100%; height: 360px; background: #000; border-radius: 12px; border: 2px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .viewfinder { position: relative; width: 100%; height: 380px; background: #000; border-radius: 12px; border: 2px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; }
     .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; width: 100%; height: 100%; padding: 10px; overflow-y: auto; }
     .preview-thumb { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid #475569; background: #000; }
     .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
     
-    /* Dynamic Admin-Uploaded Transparent Frame Overlay */
     .frame-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; background-size: cover; background-position: center; background-repeat: no-repeat; }
     .frame-badge { background: var(--primary); color: white; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; align-self: flex-start; letter-spacing: 0.1em; }
     .frame-footer { font-size: 10px; color: #fff; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.9); text-align: right; }
     
+    .action-button-row { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-action-trigger { flex: 1; background: #334155; color: #fff; border: none; padding: 10px; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; text-align: center; }
+    .btn-action-trigger:hover { background: #475569; }
+
     .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
     .checkbox-group input { width: 16px; height: 16px; accent-color: var(--primary); }
 
@@ -84,8 +87,8 @@
       <p id="systemNotice">Submit for Live Events or Weekly Challenges</p>
     </div>
 
-    <!-- MODE SELECTOR -->
-    <div class="mode-tabs">
+    <!-- DYNAMIC MODE SELECTOR TABS -->
+    <div class="mode-tabs" id="modeTabsContainer">
       <button class="mode-btn active pov" id="btnPov" onclick="switchMode('EVENT_POV')">⚡ Live Event POV</button>
       <button class="mode-btn potw" id="btnPotw" onclick="switchMode('PHOTO_OF_THE_WEEK')">🏆 Photo of the Week</button>
     </div>
@@ -98,18 +101,23 @@
         </div>
 
         <div class="form-group">
-          <label>Capture / Select Photos (End-to-End Viewfinder)</label>
-          <div class="viewfinder" onclick="document.getElementById('imageFiles').click()">
-            <span id="placeholderText" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">📷 Tap here to open camera or upload photos</span>
+          <label>Capture or Upload Snapshots</label>
+          <div class="viewfinder">
+            <span id="placeholderText" style="color: var(--text-muted); font-size: 13px; text-align: center; position: absolute; pointer-events: none;">📷 Live viewfinder active</span>
             <div id="previewGrid" class="preview-grid"></div>
-            <!-- Dynamic Transparent Frame Overlay -->
+            <!-- Dynamic Frame Overlay -->
             <div id="eventFrame" class="frame-overlay">
               <span class="frame-badge" id="badgeText">LIVE POV</span>
               <span id="frameCaptionText" class="frame-footer">#Intramurals2026</span>
             </div>
           </div>
-          <!-- capture="environment" opens live camera on mobile devices -->
-          <input type="file" id="imageFiles" accept="image/*" capture="environment" multiple style="display:none;" onchange="previewAndCompressImages(event)" required />
+          <!-- Action triggers below the viewfinder -->
+          <div class="action-button-row">
+            <button type="button" class="btn-action-trigger" onclick="document.getElementById('cameraCapture').click()">📸 Snap Live Camera</button>
+            <button type="button" class="btn-action-trigger" onclick="document.getElementById('imageFiles').click()">📁 Upload from Gallery</button>
+          </div>
+          <input type="file" id="cameraCapture" accept="image/*" capture="environment" style="display:none;" onchange="previewAndCompressImages(event)" />
+          <input type="file" id="imageFiles" accept="image/*" multiple style="display:none;" onchange="previewAndCompressImages(event)" />
         </div>
 
         <div class="form-group">
@@ -151,7 +159,7 @@
         .then(res => {
           if (res.success && res.settings) {
             systemSettings = res.settings;
-            applySystemStatus();
+            applyTabVisibilityAndStatus();
             if (systemSettings.ACTIVE_FRAME_URL) {
               document.getElementById('eventFrame').style.backgroundImage = `url('${systemSettings.ACTIVE_FRAME_URL}')`;
             }
@@ -159,14 +167,30 @@
         }).catch(() => {});
     }
 
-    function applySystemStatus() {
+    function applyTabVisibilityAndStatus() {
+      const btnPov = document.getElementById('btnPov');
+      const btnPotw = document.getElementById('btnPotw');
       const notice = document.getElementById('systemNotice');
-      if (currentMode === 'EVENT_POV' && systemSettings.POV_STATUS === 'CLOSED') {
-        notice.innerText = "⚠️ Live Event POV submissions are currently CLOSED.";
+
+      const isPovClosed = systemSettings.POV_STATUS === "CLOSED";
+      const isPotwClosed = systemSettings.POTW_STATUS === "CLOSED";
+
+      if (isPovClosed) btnPov.classList.add('hidden-tab');
+      else btnPov.classList.remove('hidden-tab');
+
+      if (isPotwClosed) btnPotw.classList.add('hidden-tab');
+      else btnPotw.classList.remove('hidden-tab');
+
+      if (isPovClosed && isPotwClosed) {
+        notice.innerText = "⚠️ All submission portals are currently CLOSED.";
         document.getElementById('submitBtn').disabled = true;
-      } else if (currentMode === 'PHOTO_OF_THE_WEEK' && systemSettings.POTW_STATUS === 'CLOSED') {
-        notice.innerText = "⚠️ Photo of the Week challenge is currently CLOSED.";
-        document.getElementById('submitBtn').disabled = true;
+        return;
+      }
+
+      if (currentMode === 'EVENT_POV' && isPovClosed && !isPotwClosed) {
+        switchMode('PHOTO_OF_THE_WEEK');
+      } else if (currentMode === 'PHOTO_OF_THE_WEEK' && isPotwClosed && !isPovClosed) {
+        switchMode('EVENT_POV');
       } else {
         notice.innerText = "Submit for Live Events or Weekly Challenges";
       }
@@ -185,8 +209,6 @@
       const fieldInput = document.getElementById('eventOrChallengeName');
       const frame = document.getElementById('eventFrame');
       const submitBtn = document.getElementById('submitBtn');
-
-      applySystemStatus();
 
       if (mode === 'EVENT_POV') {
         btnPov.className = "mode-btn active pov";
@@ -245,10 +267,8 @@
         reader.readAsDataURL(file);
       });
 
-      document.getElementById('placeholderText').classList.add('hidden');
-      if (!((currentMode === 'EVENT_POV' && systemSettings.POV_STATUS === 'CLOSED') || (currentMode === 'PHOTO_OF_THE_WEEK' && systemSettings.POTW_STATUS === 'CLOSED'))) {
-        document.getElementById('submitBtn').disabled = false;
-      }
+      document.getElementById('placeholderText').style.display = 'none';
+      document.getElementById('submitBtn').disabled = false;
       document.getElementById('submitBtn').innerText = `🚀 Send ${files.length} Optimized Snapshot(s)`;
     }
 
@@ -302,7 +322,7 @@
             msg.innerText = `✨ Successfully uploaded all ${completedCount} snapshots securely!`;
             document.getElementById('uploadForm').reset();
             document.getElementById('previewGrid').innerHTML = '';
-            document.getElementById('placeholderText').classList.remove('hidden');
+            document.getElementById('placeholderText').style.display = 'block';
             processedImages = [];
             btn.disabled = true;
           } else {

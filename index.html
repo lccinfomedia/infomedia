@@ -35,14 +35,16 @@
     input[type="text"], textarea { width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid var(--border); border-radius: 8px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s; }
     input[type="text"]:focus, textarea:focus { border-color: var(--primary); }
     
-    .viewfinder { position: relative; width: 100%; min-height: 180px; background: #000; border-radius: 10px; border: 3px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 10px; }
-    .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; width: 100%; }
+    /* Impeccable End-to-End Immersive Viewfinder */
+    .viewfinder { position: relative; width: 100%; height: 360px; background: #000; border-radius: 12px; border: 2px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; width: 100%; height: 100%; padding: 10px; overflow-y: auto; }
     .preview-thumb { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid #475569; background: #000; }
     .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
     
-    .frame-overlay { position: absolute; inset: 0; border: 12px solid rgba(15,23,42,0.4); pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; }
+    /* Dynamic Admin-Uploaded Transparent Frame Overlay */
+    .frame-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; background-size: cover; background-position: center; background-repeat: no-repeat; }
     .frame-badge { background: var(--primary); color: white; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; align-self: flex-start; letter-spacing: 0.1em; }
-    .frame-footer { font-size: 10px; color: #fff; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.8); text-align: right; }
+    .frame-footer { font-size: 10px; color: #fff; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.9); text-align: right; }
     
     .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
     .checkbox-group input { width: 16px; height: 16px; accent-color: var(--primary); }
@@ -62,7 +64,7 @@
 </head>
 <body>
 
-  <!-- DATA PRIVACY & CONTENT AGREEMENT MODAL -->
+  <!-- DATA PRIVACY AGREEMENT MODAL -->
   <div id="privacyModal" class="modal-backdrop">
     <div class="modal-card">
       <h3>🛡️ Data Privacy & Content Agreement</h3>
@@ -79,7 +81,7 @@
   <div class="container">
     <div class="header">
       <h2>📸 LCC INFOMEDIA PORTAL</h2>
-      <p>Submit for Live Events or Weekly Challenges</p>
+      <p id="systemNotice">Submit for Live Events or Weekly Challenges</p>
     </div>
 
     <!-- MODE SELECTOR -->
@@ -96,17 +98,18 @@
         </div>
 
         <div class="form-group">
-          <label>Select Photos (Auto-Compressed)</label>
+          <label>Capture / Select Photos (End-to-End Viewfinder)</label>
           <div class="viewfinder" onclick="document.getElementById('imageFiles').click()">
-            <span id="placeholderText" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">📁 Tap here to select photos</span>
+            <span id="placeholderText" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">📷 Tap here to open camera or upload photos</span>
             <div id="previewGrid" class="preview-grid"></div>
-            <!-- Frame appears ONLY for Event POV -->
+            <!-- Dynamic Transparent Frame Overlay -->
             <div id="eventFrame" class="frame-overlay">
               <span class="frame-badge" id="badgeText">LIVE POV</span>
               <span id="frameCaptionText" class="frame-footer">#Intramurals2026</span>
             </div>
           </div>
-          <input type="file" id="imageFiles" accept="image/*" multiple style="display:none;" onchange="previewAndCompressImages(event)" required />
+          <!-- capture="environment" opens live camera on mobile devices -->
+          <input type="file" id="imageFiles" accept="image/*" capture="environment" multiple style="display:none;" onchange="previewAndCompressImages(event)" required />
         </div>
 
         <div class="form-group">
@@ -136,6 +139,38 @@
     let currentMode = "EVENT_POV";
     let processedImages = [];
     let privacyAccepted = false;
+    let systemSettings = { POV_STATUS: "OPEN", POTW_STATUS: "OPEN", ACTIVE_FRAME_URL: "" };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchSettings();
+    });
+
+    function fetchSettings() {
+      fetch(`${APPS_SCRIPT_URL}?action=getSettings`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success && res.settings) {
+            systemSettings = res.settings;
+            applySystemStatus();
+            if (systemSettings.ACTIVE_FRAME_URL) {
+              document.getElementById('eventFrame').style.backgroundImage = `url('${systemSettings.ACTIVE_FRAME_URL}')`;
+            }
+          }
+        }).catch(() => {});
+    }
+
+    function applySystemStatus() {
+      const notice = document.getElementById('systemNotice');
+      if (currentMode === 'EVENT_POV' && systemSettings.POV_STATUS === 'CLOSED') {
+        notice.innerText = "⚠️ Live Event POV submissions are currently CLOSED.";
+        document.getElementById('submitBtn').disabled = true;
+      } else if (currentMode === 'PHOTO_OF_THE_WEEK' && systemSettings.POTW_STATUS === 'CLOSED') {
+        notice.innerText = "⚠️ Photo of the Week challenge is currently CLOSED.";
+        document.getElementById('submitBtn').disabled = true;
+      } else {
+        notice.innerText = "Submit for Live Events or Weekly Challenges";
+      }
+    }
 
     function acceptPrivacy() {
       privacyAccepted = true;
@@ -150,6 +185,8 @@
       const fieldInput = document.getElementById('eventOrChallengeName');
       const frame = document.getElementById('eventFrame');
       const submitBtn = document.getElementById('submitBtn');
+
+      applySystemStatus();
 
       if (mode === 'EVENT_POV') {
         btnPov.className = "mode-btn active pov";
@@ -209,7 +246,9 @@
       });
 
       document.getElementById('placeholderText').classList.add('hidden');
-      document.getElementById('submitBtn').disabled = false;
+      if (!((currentMode === 'EVENT_POV' && systemSettings.POV_STATUS === 'CLOSED') || (currentMode === 'PHOTO_OF_THE_WEEK' && systemSettings.POTW_STATUS === 'CLOSED'))) {
+        document.getElementById('submitBtn').disabled = false;
+      }
       document.getElementById('submitBtn').innerText = `🚀 Send ${files.length} Optimized Snapshot(s)`;
     }
 

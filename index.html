@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LCC Infomedia - Submission Portal</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --potw-accent: #8b5cf6;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 16px; display: flex; justify-content: center; min-height: 100vh; }
+    
+    .container { width: 100%; max-width: 480px; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; }
+    
+    .header { background: #020617; padding: 20px; text-align: center; border-bottom: 2px dashed var(--border); }
+    .header h2 { font-size: 19px; color: #fff; font-weight: 800; letter-spacing: 0.02em; }
+    .header p { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    
+    .mode-tabs { display: flex; background: #0f172a; padding: 6px; gap: 6px; border-bottom: 1px solid var(--border); }
+    .mode-btn { flex: 1; padding: 10px 8px; border: none; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 11.5px; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em; }
+    .mode-btn.active.pov { background: var(--primary); color: #fff; }
+    .mode-btn.active.potw { background: var(--potw-accent); color: #fff; }
+
+    .body { padding: 20px; flex: 1; overflow-y: auto; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    input[type="text"], textarea { width: 100%; padding: 12px; background: #0f172a; border: 1.5px solid var(--border); border-radius: 8px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s; }
+    input[type="text"]:focus, textarea:focus { border-color: var(--primary); }
+    
+    .viewfinder { position: relative; width: 100%; min-height: 180px; background: #000; border-radius: 10px; border: 3px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 10px; }
+    .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; width: 100%; }
+    .preview-thumb { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid #475569; background: #000; }
+    .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .frame-overlay { position: absolute; inset: 0; border: 12px solid rgba(15,23,42,0.4); pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; }
+    .frame-badge { background: var(--primary); color: white; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; align-self: flex-start; letter-spacing: 0.1em; }
+    .frame-footer { font-size: 10px; color: #fff; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.8); text-align: right; }
+    
+    .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+    .checkbox-group input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+    .btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 14px; font-weight: bold; border-radius: 10px; font-size: 15px; cursor: pointer; transition: background 0.2s; }
+    .btn.potw { background: var(--potw-accent); }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { background: #475569; cursor: not-allowed; }
+    #statusMsg { margin-top: 14px; text-align: center; font-size: 13.5px; font-weight: 700; }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+    .modal-card { background: #1e293b; border: 1px solid var(--border); border-radius: 12px; max-width: 440px; width: 100%; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .modal-card h3 { color: #f8fafc; font-size: 18px; margin-bottom: 10px; }
+    .modal-card p { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 16px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- DATA PRIVACY & CONTENT AGREEMENT MODAL -->
+  <div id="privacyModal" class="modal-backdrop">
+    <div class="modal-card">
+      <h3>🛡️ Data Privacy & Content Agreement</h3>
+      <p>By submitting photos to the Infomedia Portal, you agree that:</p>
+      <p style="margin-left: 10px;">
+        1. Submitted media is intended strictly for official campus publications and challenges.<br>
+        2. You own the rights to the snapshots and warrant they contain no inappropriate content.<br>
+        3. The media team holds the right to filter, frame, or archive submissions before publication.
+      </p>
+      <button class="btn" onclick="acceptPrivacy()">I Agree & Proceed</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <h2>📸 LCC INFOMEDIA PORTAL</h2>
+      <p>Submit for Live Events or Weekly Challenges</p>
+    </div>
+
+    <!-- MODE SELECTOR -->
+    <div class="mode-tabs">
+      <button class="mode-btn active pov" id="btnPov" onclick="switchMode('EVENT_POV')">⚡ Live Event POV</button>
+      <button class="mode-btn potw" id="btnPotw" onclick="switchMode('PHOTO_OF_THE_WEEK')">🏆 Photo of the Week</button>
+    </div>
+
+    <div class="body">
+      <form id="uploadForm" onsubmit="submitBatchSnapshots(event)">
+        <div class="form-group">
+          <label id="nameLabel">Event Name & Tag</label>
+          <input type="text" id="eventOrChallengeName" value="Intramurals 2026 - Day 1" required />
+        </div>
+
+        <div class="form-group">
+          <label>Select Photos (Auto-Compressed)</label>
+          <div class="viewfinder" onclick="document.getElementById('imageFiles').click()">
+            <span id="placeholderText" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">📁 Tap here to select photos</span>
+            <div id="previewGrid" class="preview-grid"></div>
+            <!-- Frame appears ONLY for Event POV -->
+            <div id="eventFrame" class="frame-overlay">
+              <span class="frame-badge" id="badgeText">LIVE POV</span>
+              <span id="frameCaptionText" class="frame-footer">#Intramurals2026</span>
+            </div>
+          </div>
+          <input type="file" id="imageFiles" accept="image/*" multiple style="display:none;" onchange="previewAndCompressImages(event)" required />
+        </div>
+
+        <div class="form-group">
+          <label>Caption / Story</label>
+          <textarea id="caption" rows="2" placeholder="Tell us about your shot..." oninput="updateFrameCaption(this.value)"></textarea>
+        </div>
+
+        <div class="checkbox-group" onclick="toggleAnonymous()">
+          <input type="checkbox" id="isAnonymous" onchange="toggleAnonymous()" />
+          <label for="isAnonymous" style="margin:0; text-transform:none; cursor:pointer;">Submit anonymously (Hide my name)</label>
+        </div>
+
+        <div class="form-group" id="senderGroup">
+          <label>Your Name / Student ID (Optional)</label>
+          <input type="text" id="senderName" placeholder="e.g. Juan Dela Cruz (BSIT-3)" />
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn" disabled>🚀 Upload Batch</button>
+      </form>
+      <div id="statusMsg"></div>
+    </div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhtlzVkpgssG0lMrZY0VD_u85Czif_aaRjUXZSvcorfWw0hJNBqdnyzTWggC6MuajR/exec";
+
+    let currentMode = "EVENT_POV";
+    let processedImages = [];
+    let privacyAccepted = false;
+
+    function acceptPrivacy() {
+      privacyAccepted = true;
+      document.getElementById('privacyModal').classList.add('hidden');
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      const btnPov = document.getElementById('btnPov');
+      const btnPotw = document.getElementById('btnPotw');
+      const nameLabel = document.getElementById('nameLabel');
+      const fieldInput = document.getElementById('eventOrChallengeName');
+      const frame = document.getElementById('eventFrame');
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (mode === 'EVENT_POV') {
+        btnPov.className = "mode-btn active pov";
+        btnPotw.className = "mode-btn potw";
+        nameLabel.innerText = "Event Name & Tag";
+        fieldInput.value = "Intramurals 2026 - Day 1";
+        frame.style.display = "flex";
+        submitBtn.className = "btn";
+      } else {
+        btnPotw.className = "mode-btn active potw";
+        btnPov.className = "mode-btn pov";
+        nameLabel.innerText = "Challenge Theme / Week";
+        fieldInput.value = "POTW Week 4: Golden Hour";
+        frame.style.display = "none";
+        submitBtn.className = "btn potw";
+      }
+    }
+
+    function previewAndCompressImages(e) {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      processedImages = [];
+      const grid = document.getElementById('previewGrid');
+      grid.innerHTML = '';
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 1200;
+            const MAX_HEIGHT = 1200;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+            } else {
+              if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+            processedImages.push(compressedBase64);
+
+            grid.innerHTML += `<div class="preview-thumb"><img src="${compressedBase64}" alt="Preview" /></div>`;
+          };
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('placeholderText').classList.add('hidden');
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('submitBtn').innerText = `🚀 Send ${files.length} Optimized Snapshot(s)`;
+    }
+
+    function updateFrameCaption(val) {
+      document.getElementById('frameCaptionText').innerText = val ? val.substring(0, 30) + '...' : '#EventPOV';
+    }
+
+    function toggleAnonymous() {
+      const isAnon = document.getElementById('isAnonymous').checked;
+      const senderGroup = document.getElementById('senderGroup');
+      senderGroup.style.opacity = isAnon ? "0.4" : "1";
+      document.getElementById('senderName').disabled = isAnon;
+    }
+
+    function submitBatchSnapshots(e) {
+      e.preventDefault();
+      if (processedImages.length === 0 || !privacyAccepted) return;
+
+      const btn = document.getElementById('submitBtn');
+      const msg = document.getElementById('statusMsg');
+
+      btn.disabled = true;
+      let completedCount = 0;
+      let errorCount = 0;
+
+      msg.style.color = "#38bdf8";
+      msg.innerText = `Uploading optimized batch (0 / ${processedImages.length})...`;
+
+      processedImages.forEach((base64Data) => {
+        const payload = {
+          submissionType: currentMode,
+          eventOrChallengeName: document.getElementById('eventOrChallengeName').value,
+          senderName: document.getElementById('senderName').value,
+          isAnonymous: document.getElementById('isAnonymous').checked,
+          caption: document.getElementById('caption').value,
+          base64Data: base64Data,
+          privacyConsent: privacyAccepted
+        };
+
+        fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(() => {
+          completedCount++;
+          if (completedCount === processedImages.length) {
+            btn.disabled = false;
+            btn.innerText = "🚀 Upload Batch";
+            msg.style.color = "#4ade80";
+            msg.innerText = `✨ Successfully uploaded all ${completedCount} snapshots securely!`;
+            document.getElementById('uploadForm').reset();
+            document.getElementById('previewGrid').innerHTML = '';
+            document.getElementById('placeholderText').classList.remove('hidden');
+            processedImages = [];
+            btn.disabled = true;
+          } else {
+            msg.innerText = `Uploading batch (${completedCount} / ${processedImages.length})...`;
+          }
+        }).catch(() => {
+          errorCount++;
+          completedCount++;
+        });
+      });
+    }
+  </script>
+</body>
+</html>
